@@ -20,7 +20,7 @@ from ers.store import OWN_DBS, ERS_PUBLIC_DB, ERS_PRIVATE_DB
 
 class ERSReadOnly(object):
     """ ERS version with read-only methods.
-    
+
         :param fixed_peers: URL's of known peers
         :type fixed_peers: list
         :param local_only: whether or not the peer is local-only
@@ -58,16 +58,16 @@ class ERSReadOnly(object):
         '''
         Create an entity object, fill it will all the relevant documents
         '''
-        
+
         # Create the entity
         entity = Entity(entity_name)
-        
+
         # Add matching documents from the local store
         for source, db_name in self.store.db_names.iteritems():
             docs = self.store[db_name].docs_by_entity(entity_name)
             for doc in docs:
                 entity.add_document(doc, source)
-         
+
         # Get documents out of public/cache of connected peers
         # TODO parallelize
         # TODO move to a separate call  
@@ -90,12 +90,12 @@ class ERSReadOnly(object):
         #            self._timeout_count.pop(url, 0)
         #            for doc in remote_docs:
         #                entity.add_document(doc, 'remote')
-        
+
         return entity
 
     def search(self, prop, value=None):
         """ Search entities by property or property + value pair.
-        
+
             :param prop: property to search for
             :type prop: str.
             :param value: value to search for
@@ -138,7 +138,7 @@ class ERSReadOnly(object):
 
     def get_peers(self):
         """ Get the known peers.
-        
+
             :rtype: array 
         """
         if self._local_only:
@@ -162,7 +162,7 @@ class ERSReadOnly(object):
 
 class ERS(ERSReadOnly):
     """ The read-write local class for an ERS peer.
-    
+
         :param fixed_peers: known peers
         :type fixed_peers: tuple
         :param local_only: if True ERS will not attempt to connect to remote peers
@@ -173,10 +173,10 @@ class ERS(ERSReadOnly):
 
     def reset(self):
         self.store.reset()
-    
+
     def delete_entity(self, entity_name):
         """ Delete an entity from the public and private stores.
-        
+
             :param entity: entity to delete
             :type entity: str.
             :param graph: graph to delete from
@@ -195,13 +195,13 @@ class ERS(ERSReadOnly):
         '''
         for scope in ['public', 'private']:
             document = entity.get_documents(scope)
-            
+
             # Skip the document if empty or not right scope
             if document == None:
                 continue
-            
+
             doc = document.to_json()
-            
+
             # Update the author, last modif date and other meta-data
             if '@owner' not in doc:
                 doc['@owner'] = self.host_urn
@@ -211,7 +211,7 @@ class ERS(ERSReadOnly):
                 self.store[ERS_PUBLIC_DB].save(doc)
             elif scope == 'private':
                 self.store[ERS_PRIVATE_DB].save(doc)
-                
+
     def cache_entity(self, entity):
         '''
         Place an entity in the cache. This mark the entity as being
@@ -223,14 +223,14 @@ class ERS(ERSReadOnly):
         # No point in caching it again
         if self.is_cached(entity.get_entity_name()):
             return
-        
+
         # Save all its current documents in the cache
         for document in entity.get_documents('remote'):
             self.store.cache.save_doc(document)
 
     def delete_from_cache(self, entity_name):
         """ Delete an entity from the cache.
-        
+
             :param entity_name: name of the entity to delete
             :type entity: str
             :returns: success status
@@ -242,7 +242,7 @@ class Document():
     '''
     Example document representing partial data about 
     entity<http://www.w3.org/People/Berners-Lee/card#i>:
-    
+
     {
         "_id": "3d00b0cc1ea95dbaa806dbf5b96c4d5b",
         "_rev": "1-e004c4ac4b5f7923892ad417d364a85e",
