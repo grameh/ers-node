@@ -30,6 +30,12 @@ from defaults import set_logging
 import gobject
 from zeroconf import ERSPeerInfo
 from store import ERS_PUBLIC_DB, ERS_CACHE_DB, ERS_STATE_DB
+#tornado
+import threading
+from multiprocessing import Process
+import tornado.ioloop
+import tornado.web
+import tornado.websocket
 
 log = logging.getLogger('ers')
 
@@ -137,8 +143,8 @@ class ERSDaemon(object):
         # if the hostname is the same as another node, avahi will not pick up the service
         # so we must add some unique identifier
         # uuid4 guarantees unique identifiers, but we cannot fit the whole 32 characters otherwise the name becomes too long
-        # thus, we only choose the first 20 and hope there will be no collisions
-        service_name = 'ERS on {0} (prefix={1},type={2})'.format(socket.gethostname() + str(uuid.uuid4())[:20], self.prefix, self.peer_type)
+        # thus, we only choose the first 10 and hope there will be no collisions
+        service_name = 'ERS on {0} (prefix={1},type={2})'.format(socket.gethostname() + str(uuid.uuid4())[:10], self.prefix, self.peer_type)
         self._service = zeroconf.PublishedService(service_name, ERS_AVAHI_SERVICE_TYPE, self.port)
         self._service.publish()
 
@@ -342,6 +348,35 @@ class ERSDaemon(object):
                                "delete " + self.pidfile + " and try again.")
 
 
+daemon = None
+
+class MainHandler(tornado.web.RequestHandler):
+    def get(self):
+        daemon._update_replication_links()
+        #the daemon reallllly needs to be stateless!
+        #make sure peers are retrieved from couch in update repl links
+        self.write("replication links updated!\n")
+
+
+class Server:
+    def __init__(self, port=8888):
+        self.application = tornado.web.Application([ (r"/", MainHandler) ])
+
+        def server_thread(application, port):
+            application.listen(port)
+            tornado.ioloop.IOLoop.instance().start()
+
+        self.process = Process(target=server_thread,
+                               args=(self.application, port,))
+
+    def start(self):
+        self.process.start()
+
+    def stop(self):
+        ioloop = tornado.ioloop.IOLoop.instance()
+        ioloop.add_callback(ioloop.stop)
+
+
 def run():
     """
     Parse the given arguments for setting up the daemon and run it.
@@ -354,12 +389,15 @@ def run():
     # Create the configuration object
     config = Configuration(args.config)
 
-    daemon = None
     failed = False
     mainloop = None
     try:
+        global daemon
         daemon = ERSDaemon(config)
         daemon.start()
+
+        server = Server()
+        server.start()
 
         def sig_handler(sig, frame):
             mainloop.quit()
@@ -374,12 +412,15 @@ def run():
         #application.listen(8888, address="127.0.0.1")
 
         # Start the main loop
+
         mainloop = gobject.MainLoop()
         mainloop.run()
 
     except (KeyboardInterrupt, SystemExit):
         if mainloop is not None:
             mainloop.quit()
+        if server is not None:
+            server.stop()
     except RuntimeError as e:
         log.critical(str(e))
         failed = True
