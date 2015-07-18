@@ -87,7 +87,7 @@ def batch_add_statement(entity):
         val = values[i]
         add_statement(entity, pred, val)
         import time
-        time.sleep(1)
+        time.sleep(0.3)
     return 'batch added'
 
 @app.route('/AddStatement/<entity>/<predicate>/<value>')

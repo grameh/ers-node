@@ -17,8 +17,10 @@ def get_nr_documents(entity_id, predicate, base_url, database_name):
     resp = requests.get(url)
     nr_values = int(resp.content)
     return nr_values
-
-
+def service_store_access(base_url):
+    url = base_url + '/ServiceStoreAccess'
+    resp = requests.get(url)
+    return True
 
 
 class ReplicationTestCase(unittest.TestCase):
@@ -38,22 +40,28 @@ class ReplicationTestCase(unittest.TestCase):
         self.assertEqual(resp3.status_code, 200)
         d3_pid = resp3.content
         print "bridge daemon started with pid " + d3_pid
+        time.sleep(2)
 
         resp1 = requests.get(node1_url + '/StartDaemon')
         self.assertEqual(resp1.status_code, 200)
         d1_pid = resp1.content
         print "daemon started with pid " + d1_pid
 
+        time.sleep(2)
         resp2 = requests.get(node2_url + '/StartDaemon')
         self.assertEqual(resp2.status_code, 200)
         d2_pid = resp2.content
         print "daemon started with pid " + d2_pid
 
+        time.sleep(2)
         #clean_db
-        resp1 = requests.get(node1_url + '/ResetDb')
-        resp1 = requests.get(node2_url + '/ResetDb')
-        resp1 = requests.get(bridge_url+ '/ResetDb')
+        #resp1 = requests.get(node1_url + '/ResetDb')
+        #time.sleep(1)
+        #resp1 = requests.get(node2_url + '/ResetDb')
+        #time.sleep(1)
+        #resp1 = requests.get(bridge_url+ '/ResetDb')
 
+        #time.sleep(3)
         bridge_entity = "urn:ers:bridge_entity"
 
         test_pred = 'rdf:comment'
@@ -67,14 +75,14 @@ class ReplicationTestCase(unittest.TestCase):
         print "node2 public document id : " + str(document_id_node2)
 
         #update replication links to link the doc on node 2 public to doc on node1 cache
-        resp = requests.get(node1_url + '/Get/' + bridge_entity)
+        #resp = requests.get(node1_url + '/Get/' + bridge_entity)
         resp = requests.get(node1_url + '/CacheEntity/' + bridge_entity)
 
 
-        resp = requests.get(node2_url + '/Get/' + bridge_entity)
+        #resp = requests.get(node2_url + '/Get/' + bridge_entity)
         resp = requests.get(node2_url + '/CacheEntity/' + bridge_entity)
 
-        replication_statements = 50
+        replication_statements = 10
         pred_node1 = []
         val_node1 = []
         pred_node2 = []
@@ -103,7 +111,7 @@ class ReplicationTestCase(unittest.TestCase):
         # they should be replicated to the bridge's cache, and then to the caches of the nodes
         # we want to see how many are in node2's cache from those sent to node1 and vice-versa
 
-        total_time = 50
+        total_time = 5
         while time.time() - req_start < total_time:
             print '-------------------------------------------'
             nr_values = get_nr_documents(document_id_node2, test_pred, node2_url, 'ers-public')
@@ -121,7 +129,8 @@ class ReplicationTestCase(unittest.TestCase):
             print "node 2 cache after {} nr_values:{} ".format(time.time() - req_start, nr_values)
             print '-------------------------------------------'
             print "\n"
-            time.sleep(1)
+            time.sleep(2)
+        import pdb;pdb.set_trace()
 
         #clean_db
         resp1 = requests.get(node1_url + '/ResetDb')
