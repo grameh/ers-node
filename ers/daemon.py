@@ -346,11 +346,11 @@ class ERSDaemon(object):
         # add one more rule to do that
 
         # Apply sync rules
-        if self._old_replication_docs != docs:
-            log.debug(docs)
-            self._old_replication_docs = deepcopy(docs)
+        #if self._old_replication_docs != docs:
+        #    log.debug(docs)
+        #    self._old_replication_docs = deepcopy(docs)
 
-            self._set_replication_documents(docs)
+        self._set_replication_documents(docs)
 
     def _clear_replication_documents(self):
         self._set_replication_documents({})
@@ -402,7 +402,9 @@ def stop_server():
     return 'Server shutting down'
 
 def run_flask():
-    app.run(port=FLASK_PORT)
+    from werkzeug.serving import run_simple
+    run_simple('localhost', FLASK_PORT, app)
+    #app.run(port=FLASK_PORT)
 
 def run():
     """

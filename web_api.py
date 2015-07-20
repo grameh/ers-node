@@ -63,6 +63,10 @@ def service_store_access():
 @app.route('/ResetDb')
 def reset_db():
     interface.clean_db()
+    DEFAULT_STORE_ADMIN_URI = 'http://admin:admin@127.0.0.1:5984'
+    server = Server(DEFAULT_STORE_ADMIN_URI)
+    del server['_replicator']
+    server.create('_replicator')
     return 'Databases reset'
 
 @app.route('/Get/<entity>')
